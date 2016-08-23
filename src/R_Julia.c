@@ -232,13 +232,13 @@ static jl_value_t *R_Julia_MD_NA_Factor(SEXP Var)
 static jl_value_t *R_Julia_MD_NA_DataFrame(SEXP Var, SEXP na, const char *VarName)
 {
 
-
   char evalcmd[evalsize];
   char eltcmd[eltsize];
   const char *onename;
   SEXP elt;
   jl_value_t *temp;
-
+  jl_value_t *ans;
+  
   SEXP names = getAttrib(Var, R_NamesSymbol);
   size_t len = LENGTH(Var);
 
@@ -247,12 +247,10 @@ static jl_value_t *R_Julia_MD_NA_DataFrame(SEXP Var, SEXP na, const char *VarNam
     jl_error("R_Julia_MD_NA_DataFrame received a 'Var' arg that was not a list/data.frame.\n");
   
   jl_function_t *df_func = jl_get_function(jl_main_module, "DataFrame");
+  ans = jl_call0(df_func);
+  jl_set_global(jl_main_module, jl_symbol(VarName), (jl_value_t *)ans);
     
   if (len == 0) {
-    //    snprintf(evalcmd, evalsize, "%s=DataFrame(Any[ [ 1,2,3] ], [:a])", VarName);
-    //        jl_eval_string(evalcmd);
-    temp = jl_call0(df_func);
-    jl_set_global(jl_main_module, jl_symbol(VarName), (jl_value_t *)temp);
     return (jl_value_t *) jl_nothing;
   }
   
@@ -268,11 +266,7 @@ static jl_value_t *R_Julia_MD_NA_DataFrame(SEXP Var, SEXP na, const char *VarNam
       }
       jl_set_global(jl_main_module, jl_symbol(eltcmd), (jl_value_t *)temp);
       onename = CHAR(STRING_ELT(names, i));
-      if (i == 0) {
-	snprintf(evalcmd, evalsize, "%s=DataFrame(%s = %s)", VarName, onename, eltcmd);
-      } else {
-	snprintf(evalcmd, evalsize, "%s[Symbol(\"%s\")] = %s", VarName, onename, eltcmd);
-      }
+      snprintf(evalcmd, evalsize, "%s[Symbol(\"%s\")] = %s", VarName, onename, eltcmd);
       jl_eval_string(evalcmd);
 
       //clear
