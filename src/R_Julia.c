@@ -231,16 +231,31 @@ static jl_value_t *R_Julia_MD_NA_Factor(SEXP Var)
 //convert R DataFrame to Julia DataFrame in DataFrames package
 static jl_value_t *R_Julia_MD_NA_DataFrame(SEXP Var, SEXP na, const char *VarName)
 {
-  SEXP names = getAttrib(Var, R_NamesSymbol);
-  size_t len = LENGTH(Var);
-  if (TYPEOF(Var) != VECSXP || len == 0 || names == R_NilValue)
-    return (jl_value_t *) jl_nothing;
+
+
   char evalcmd[evalsize];
   char eltcmd[eltsize];
   const char *onename;
-
   SEXP elt;
   jl_value_t *temp;
+
+  SEXP names = getAttrib(Var, R_NamesSymbol);
+  size_t len = LENGTH(Var);
+
+  // Called from R code that guarantees FALSE, but good to check anyway
+  if (TYPEOF(Var) != VECSXP || names == R_NilValue)
+    jl_error("R_Julia_MD_NA_DataFrame received a 'Var' arg that was not a list/data.frame.\n");
+  
+  jl_function_t *df_func = jl_get_function(jl_main_module, "DataFrame");
+    
+  if (len == 0) {
+    //    snprintf(evalcmd, evalsize, "%s=DataFrame(Any[ [ 1,2,3] ], [:a])", VarName);
+    //        jl_eval_string(evalcmd);
+    temp = jl_call0(df_func);
+    jl_set_global(jl_main_module, jl_symbol(VarName), (jl_value_t *)temp);
+    return (jl_value_t *) jl_nothing;
+  }
+  
   for (size_t i = 0; i < len; i++)
     {
       elt = VECTOR_ELT(Var, i);

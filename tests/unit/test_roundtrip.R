@@ -1,4 +1,3 @@
-
 ### Test sending data from R to julia and back again
 
 library(RUnit)
